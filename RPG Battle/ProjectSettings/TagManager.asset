@@ -41,3 +41,9 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: UI - UniteSprite
+    uniqueID: 3097760845
+    locked: 0
+  - name: UI - Border
+    uniqueID: 4250749983
+    locked: 0

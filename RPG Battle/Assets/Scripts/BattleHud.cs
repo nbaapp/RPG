@@ -12,10 +12,10 @@ public class BattleHud : MonoBehaviour
 
     public void SetHud(Unit unit)
     {
-        nameText.text = unit.unitName;
-        levelText.text = "Lv " + unit.unitLevel;
-        hpSlider.maxValue = unit.maxHP;
-        hpSlider.value = unit.currentHP;
+        nameText.text = unit.GetName();
+        levelText.text = "Lv " + unit.GetLevel();
+        hpSlider.maxValue = unit.GetMaxHP();
+        hpSlider.value = unit.GetCurrentHP();
     }
 
     public void setHP(int hp)

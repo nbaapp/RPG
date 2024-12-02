@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Threading.Tasks;
 
 public enum BattleState {START, PLAYERTURN, ENEMYTURN, WON, LOST}
 
 public class BattleSystem : MonoBehaviour
 {
     public BattleState state;
-
-    public GameObject playerPrefab;
-    public GameObject enemyPrefab;
+    
+    private SetUp setUp;
 
     public Transform playerLocation;
     public Transform enemyLocation;
@@ -21,30 +21,36 @@ public class BattleSystem : MonoBehaviour
 
     public TextMeshProUGUI dialogueText;
 
+    //FIXME MOVE TO UNIT
     public BattleHud playerHUD;
     public BattleHud enemyHUD;
 
     // Start is called before the first frame update
     void Start()
     {
+        setUp = GetComponent<SetUp>();
         state = BattleState.START;
-        StartCoroutine(SetupBattle());
+        //find object with name "Player" and "Enemy"
+        playerUnit = GameObject.Find("Player").GetComponent<Unit>();
+        enemyUnit = GameObject.Find("Enemy").GetComponent<Unit>();
+        SetupBattle();
     }
 
-    IEnumerator SetupBattle()
+    
+    async void SetupBattle()
     {
-        GameObject player = Instantiate(playerPrefab, playerLocation);
-        playerUnit = player.GetComponent<Unit>();
+        playerUnit = await setUp.SpawnUnit(playerUnit);
 
-        GameObject enemy = Instantiate(enemyPrefab, enemyLocation);
-        enemyUnit = enemy.GetComponent<Unit>();
+        UnitAttributes enemyValues = await setUp.CreateEnemyUnit();
+        enemyUnit.SetValues(enemyValues);
+        enemyUnit = await setUp.SpawnUnit(enemyUnit);
 
-        dialogueText.text = enemyUnit.unitName + " challenges you!";
+        dialogueText.text = enemyUnit.GetName() + " challenges you!";
 
         playerHUD.SetHud(playerUnit);
         enemyHUD.SetHud(enemyUnit);
 
-        yield return new WaitForSeconds(2f);
+        //yield return new WaitForSeconds(2f);
 
         state = BattleState.PLAYERTURN;
         PlayerTurn();
@@ -52,13 +58,13 @@ public class BattleSystem : MonoBehaviour
 
     IEnumerator PlayerAttack()
     {
-        bool isDead = enemyUnit.TakeDamage(playerUnit.attack);
-        enemyHUD.setHP(enemyUnit.currentHP);
+        enemyUnit.TakeDamage(playerUnit.GetAttack());
+        enemyHUD.setHP(enemyUnit.GetAttack());   //FIXME Hud should be handled by the unit
         dialogueText.text = "Attack Successful!";
 
         yield return new WaitForSeconds(2f);
 
-        if (isDead)
+        if (enemyUnit.isDead)
         {
             state = BattleState.WON;
             EndBattle();
@@ -72,17 +78,18 @@ public class BattleSystem : MonoBehaviour
 
     IEnumerator EnemyTurn()
     {
-        dialogueText.text = enemyUnit.unitName + " attacked!";
+        Action action = enemyUnit.SelectAction();
+        dialogueText.text = enemyUnit.GetName() + " used " + action.name + "!";
 
         yield return new WaitForSeconds(1f);
 
-        bool isDead = playerUnit.TakeDamage(enemyUnit.attack);
-        playerHUD.setHP(playerUnit.currentHP);
+        enemyUnit.ExecuteAction(action, new List<Unit> { playerUnit });
+        playerHUD.setHP(playerUnit.GetCurrentHP());    //FIXME Hud should be handled by the unit
 
         yield return new WaitForSeconds(1f);
 
 
-        if (isDead)
+        if (playerUnit.isDead)
         {
             state = BattleState.LOST;
             EndBattle();
