@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4134418834279590399}
   - component: {fileID: 6984406306717377681}
   m_Layer: 5
-  m_Name: Unit
+  m_Name: Unit 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -110,3 +110,4 @@ MonoBehaviour:
   defense: 5
   maxHP: 5
   currentHP: 5
+  isDead: 0

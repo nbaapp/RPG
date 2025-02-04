@@ -8,7 +8,8 @@ public class Action
     public string name;
     public string description;
     public TargetType targetType;
-    public List<Effect> effects;
+    public Damage damage;
+    public List<StatusEffect> statusEffects;
 
     //Dictionary to map target type value to string name
     public static Dictionary<TargetType, string> targetTypeToString = new Dictionary<TargetType, string>
@@ -48,12 +49,13 @@ public class Action
         }
     }
 
-    public Action(string name, string description, TargetType targetType, List<Effect> effects)
+    public Action(string name, string description, TargetType targetType, Damage damage, List<StatusEffect> statusEffects)
     {
         this.name = name;
         this.description = description;
         this.targetType = targetType;
-        this.effects = effects;
+        this.damage = damage;
+        this.statusEffects = statusEffects;
     }
 }
 

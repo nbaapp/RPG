@@ -5,21 +5,17 @@ using UnityEngine.UI;
 using TMPro;
 using System.Threading.Tasks;
 
-public enum BattleState {START, PLAYERTURN, ENEMYTURN, WON, LOST}
+public enum BattleState {START, PLAYERTURN, ENEMYTURN, NEWROUND, WON, LOST}
 
 public class BattleSystem : MonoBehaviour
 {
     public BattleState state;
     
     private SetUp setUp;
-
-    public Transform playerLocation;
-    public Transform enemyLocation;
+    public UI ui;
     
-    private Unit playerUnit;
+    private PlayerUnit playerUnit;
     private Unit enemyUnit;
-
-    public TextMeshProUGUI dialogueText;
 
     //FIXME MOVE TO UNIT
     public BattleHud playerHUD;
@@ -31,21 +27,29 @@ public class BattleSystem : MonoBehaviour
         setUp = GetComponent<SetUp>();
         state = BattleState.START;
         //find object with name "Player" and "Enemy"
-        playerUnit = GameObject.Find("Player").GetComponent<Unit>();
+        playerUnit = GameObject.Find("Player").GetComponent<PlayerUnit>();
         enemyUnit = GameObject.Find("Enemy").GetComponent<Unit>();
+
         SetupBattle();
     }
 
     
     async void SetupBattle()
     {
-        playerUnit = await setUp.SpawnUnit(playerUnit);
+        ui.ActivatMainPanel();
+
+        playerUnit = (PlayerUnit) await setUp.SpawnUnit(playerUnit);
+        ui.SetPlayer(playerUnit);
+        ui.SetAction1Text(playerUnit.GetActions()[0].name);
+        ui.SetAction2Text(playerUnit.GetActions()[1].name);
+        ui.SetAction3Text(playerUnit.GetActions()[2].name);
+        ui.SetAction4Text(playerUnit.GetActions()[3].name);
 
         UnitAttributes enemyValues = await setUp.CreateEnemyUnit();
-        enemyUnit.SetValues(enemyValues);
+        enemyUnit.SetBaseValues(enemyValues);
         enemyUnit = await setUp.SpawnUnit(enemyUnit);
 
-        dialogueText.text = enemyUnit.GetName() + " challenges you!";
+        ui.setDialogueText(enemyUnit.GetName() + " challenges you!");
 
         playerHUD.SetHud(playerUnit);
         enemyHUD.SetHud(enemyUnit);
@@ -53,14 +57,13 @@ public class BattleSystem : MonoBehaviour
         //yield return new WaitForSeconds(2f);
 
         state = BattleState.PLAYERTURN;
-        PlayerTurn();
+        PlayerTurn(playerUnit);
     }
 
-    IEnumerator PlayerAttack()
+    public IEnumerator PlayerAction(Action action)
     {
-        enemyUnit.TakeDamage(playerUnit.GetAttack());
-        enemyHUD.setHP(enemyUnit.GetAttack());   //FIXME Hud should be handled by the unit
-        dialogueText.text = "Attack Successful!";
+        ui.ActivatMainPanel();
+        ui.setDialogueText("You used " + action.name + "!");
 
         yield return new WaitForSeconds(2f);
 
@@ -78,13 +81,13 @@ public class BattleSystem : MonoBehaviour
 
     IEnumerator EnemyTurn()
     {
+        ui.ActivatMainPanel();
         Action action = enemyUnit.SelectAction();
-        dialogueText.text = enemyUnit.GetName() + " used " + action.name + "!";
+        ui.setDialogueText(enemyUnit.GetName() + " used " + action.name + "!");
 
         yield return new WaitForSeconds(1f);
 
         enemyUnit.ExecuteAction(action, new List<Unit> { playerUnit });
-        playerHUD.setHP(playerUnit.GetCurrentHP());    //FIXME Hud should be handled by the unit
 
         yield return new WaitForSeconds(1f);
 
@@ -96,9 +99,23 @@ public class BattleSystem : MonoBehaviour
         }
         else
         {
-            state = BattleState.PLAYERTURN;
-            PlayerTurn();
+            state = BattleState.NEWROUND;
+            StartCoroutine(NewRound());
         }
+    }
+
+    IEnumerator NewRound()
+    {
+        state = BattleState.PLAYERTURN;
+        foreach (Unit unit in GetUnit())
+        {
+            foreach (StatusEffect effect in unit.GetStatusEffects())
+            {
+                effect.Tick(unit);
+            }
+        }
+        PlayerTurn(playerUnit);
+        yield return new WaitForSeconds(1f);
     }
 
 
@@ -106,20 +123,21 @@ public class BattleSystem : MonoBehaviour
     {
         if (state == BattleState.WON)
         {
-            dialogueText.text = "You Won!";
+            ui.setDialogueText("You Won!");
         }
         else if(state == BattleState.LOST)
         {
-            dialogueText.text = "You were defeated";
+            ui.setDialogueText("You were defeated");
         }
     }
 
-    void PlayerTurn()
+    void PlayerTurn(PlayerUnit unit)
     {
-        dialogueText.text = "Your Turn!";
+        ui.ActivatMainPanel();
+        ui.setDialogueText(unit.GetName() + "'s turn!");
     }
 
-    public void OnAttackButton()
+    public void OnActButton()
     {
         if (state != BattleState.PLAYERTURN)
         {
@@ -127,7 +145,20 @@ public class BattleSystem : MonoBehaviour
         }
         else
         {
-            StartCoroutine(PlayerAttack());
+            ui.ActivateActionPanel();
         }
+    }
+
+    public List<Unit> GetPlayerUnits()
+    {
+        return new List<Unit> { playerUnit };
+    }
+    public List<Unit> GetEnemyUnits()
+    {
+        return new List<Unit> { enemyUnit };
+    }
+    public List<Unit> GetUnit()
+    {
+        return new List<Unit> { playerUnit, enemyUnit };
     }
 }

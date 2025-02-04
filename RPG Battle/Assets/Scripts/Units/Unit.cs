@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class Unit : MonoBehaviour
 {
+    protected BattleSystem battleSystem;
+    protected UnitAttributes baseAttributes;
+    protected BattleHud battleHud;
     [SerializeField]
     protected string unitName;
     [SerializeField]
@@ -13,9 +16,13 @@ public class Unit : MonoBehaviour
     [SerializeField]
     protected int attack;
     [SerializeField]
+    protected int magic;
+    [SerializeField]
     protected int magicDefence;
     [SerializeField]
     protected int defense;
+    [SerializeField]
+    protected int speed;
     [SerializeField]
     protected int maxHP;
     [SerializeField]
@@ -23,16 +30,23 @@ public class Unit : MonoBehaviour
 
     protected List<Action> actions;
 
+    [SerializeField]
+    protected List<StatusEffect> statusEffects;
+
     public bool isDead = false;
 
     void Start() {
+        battleSystem = GameObject.Find("Battle System").GetComponent<BattleSystem>();
+        battleHud = transform.parent.parent.GetComponent<BattleHud>();
         currentHP = maxHP;
         isDead = false;
+        statusEffects = new List<StatusEffect>();
     }
     
     public bool TakeDamage(int dmg)
     {
         currentHP -= dmg;
+        battleHud.SetHP(currentHP);
 
         if(currentHP <= 0)
         {
@@ -64,34 +78,75 @@ public class Unit : MonoBehaviour
 
     public void ExecuteAction(Action action, List<Unit> targets) {
         foreach (Unit target in targets) {
-            foreach (Effect effect in action.effects) {
-                target.ApplyEffect(effect);
+            Debug.Log(unitName + " used " + action.name + " on " + target.unitName);
+            foreach (StatusEffect effect in action.statusEffects) {
+                target.ApplyStatusEffect(effect);
             }
+            target.ApplyDamage(action.damage);
         }
     }
 
-    public void ApplyEffect(Effect effect) {
-        switch (effect.GetEffectType()) {
-            case EffectType.Damage:
-                TakeDamage(effect.GetEffectValue());
+    public void ApplyDamage(Damage damage) {
+        switch (damage.damageType) {
+            case DamageType.Damage:
+                TakeDamage(damage.value);
+                Debug.Log(unitName + " took " + damage.value + " damage");
                 break;
-            case EffectType.Heal:
-                Heal(effect.GetEffectValue());
+            case DamageType.Heal:
+                Heal(damage.value);
+                Debug.Log(unitName + " healed " + damage.value + " health");
                 break;
-            case EffectType.Buff:
+            case DamageType.None:
+                Debug.Log("Not a damaging move");
                 break;
-            case EffectType.Debuff:
+            default:
+                Debug.Log("Invalid Damage Type");
                 break;
         }
     }
 
-    public void SetValues(UnitAttributes attributes) {
+    public void ApplyStatusEffect(StatusEffect statusEffect) {
+        if (statusEffects == null) {
+            statusEffects = new List<StatusEffect>();
+        }
+        //MAY NOT WORK
+        if (statusEffects.Contains(statusEffect)) {
+            StatusEffect status = statusEffects.Find(x => x.name == statusEffect.name);
+            status.ResetDuration();
+            return;
+        }
+        statusEffect.ApplyEffect(this);
+        statusEffects.Add(statusEffect);
+        Debug.Log(unitName + " has been affected by " + statusEffect.name);
+    }
+
+    public void RemoveStatusEffect(StatusEffect statusEffect) {
+        if (statusEffects == null) {
+            return;
+        }
+        if (!statusEffects.Contains(statusEffect)) {
+            Debug.Log(unitName + " does not have " + statusEffect.name);
+            return;
+        }
+        statusEffects.Remove(statusEffect);
+        statusEffect.RemoveEffect(this);
+        Debug.Log(unitName + " has been cured of " + statusEffect.name);
+    }
+
+    public void SetBaseValues(UnitAttributes attributes = null) {
+        if (attributes == null) {
+            Debug.Log("UnitAttributes is null");
+            return;
+        }
+        baseAttributes = attributes;
         unitName = attributes.unitName;
         unitDescription = attributes.unitDescription;
         unitLevel = attributes.unitLevel;
         attack = attributes.attack;
+        magic = attributes.magic;
         magicDefence = attributes.magicDefence;
         defense = attributes.defense;
+        speed = attributes.speed;
         maxHP = attributes.maxHP;
         currentHP = attributes.maxHP;
     }
@@ -134,6 +189,12 @@ public class Unit : MonoBehaviour
     public void SetAttack(int attack) {
         this.attack = attack;
     }
+    public int GetMagic() {
+        return magic;
+    }
+    public void SetMagic(int magic) {
+        this.magic = magic;
+    }
     public int GetMagicDefence() {
         return magicDefence;
     }
@@ -149,6 +210,12 @@ public class Unit : MonoBehaviour
     public int GetMaxHP() {
         return maxHP;
     }
+    public int GetSpeed() {
+        return speed;
+    }
+    public void SetSpeed(int speed) {
+        this.speed = speed;
+    }
     public void SetMaxHP(int maxHP) {
         this.maxHP = maxHP;
     }
@@ -158,6 +225,11 @@ public class Unit : MonoBehaviour
     public void SetCurrentHP(int currentHP) {
         this.currentHP = currentHP;
     }
-
+    public UnitAttributes GetBaseAttributes() {
+        return baseAttributes;
+    }
+    public List<StatusEffect> GetStatusEffects() {
+        return statusEffects;
+    }
 
 }

@@ -7,8 +7,10 @@ public class UnitAttributes {
     public string unitDescription;
     public int unitLevel;
     public int attack;
+    public int magic;
     public int magicDefence;
     public int defense;
+    public int speed;
     public int maxHP;
 
     public UnitAttributes() {

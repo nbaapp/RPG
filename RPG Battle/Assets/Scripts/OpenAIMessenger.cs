@@ -17,9 +17,6 @@ public class OpenAIMessenger : MonoBehaviour
     Model textModel;
     Model imageModel;
 
-    List<Message> messages = new List<Message>();
-    List<Message> actionMessages = new List<Message>();
-
     [Header("API Settings")]
     public string textModelName = "gpt-4o";
     public string imageModelName = "dall-e-3";
@@ -29,10 +26,9 @@ public class OpenAIMessenger : MonoBehaviour
         api = new OpenAIClient(new OpenAIAuthentication().LoadFromPath("/Users/aaronpeercy/.openai/auth.json"));
         textModel = new Model(textModelName);
         imageModel = new Model(imageModelName);
-        ResetAndSetSystemMessage("You are a helpful chatbot");
     }
 
-    public async Task<string> SendTextMessage(string message) {
+    public async Task<string> SendTextMessage(string message, List<Message> messages) {
         //add user message to the list
         messages.Add(new Message(Role.User, message));
 
@@ -47,7 +43,7 @@ public class OpenAIMessenger : MonoBehaviour
     }
 
     //get formatted response
-    public async Task<UnitAttributes> GenerateUnit(string message) {
+    public async Task<UnitAttributes> GenerateUnit(string message, List<Message> messages) {
         //add user message to the list
         messages.Add(new Message(Role.User, message));
 
@@ -109,12 +105,12 @@ public class OpenAIMessenger : MonoBehaviour
         return sprite;
     }
 
-    public async Task<Action> GetActionResponse(string message) {
+    public async Task<Action> GetActionResponse(string message, List<Message> actionMessages) {
         //add user message to the list
         actionMessages.Add(new Message(Role.User, message));
 
         //send message to the API
-        var chatRequest = new ChatRequest(messages, textModel);
+        var chatRequest = new ChatRequest(actionMessages, textModel);
         var response = await api.ChatEndpoint.GetCompletionAsync<ActionResponse>(chatRequest);
         var choice = response.Item1;
 
@@ -123,37 +119,27 @@ public class OpenAIMessenger : MonoBehaviour
             choice.name,
             choice.description,
             Action.StringToTargetType(choice.targetType),
-            new List<Effect>()
+            new Damage(Damage.StringToDamageType(choice.damageType), 10),
+            new List<StatusEffect>()
         );
 
-        foreach (EffectResponse effect in choice.effects) {
-            action.effects.Add(new Effect
-            (
-                Effect.StringToEffectType(effect.effectType),
-                effect.value,
-                effect.duration
-            ));
+        foreach (StatusResponse effect in choice.statusEffects) {
+            action.statusEffects.Add(StatusEffect.StringToStatusEffect(effect.effectName));
         }
 
-        string DebugMessage = "Action Name: " + action.name + "\n" +
+        string debugMessage = "Action Name: " + action.name + "\n" +
             "Action Description: " + action.description + "\n" +
-            "Target Type: " + action.targetType + "\n";
-        foreach (Effect effect in action.effects) {
-            DebugMessage += "Effect Type: " + effect.effectType + "\n" +
-                "Effect Value: " + effect.value + "\n" +
-                "Effect Duration: " + effect.duration + "\n";
+            "Target Type: " + Action.TargetTypeToString(action.targetType) + "\n" +
+            "Damage Type: " + Damage.DamageTypeToString(action.damage.damageType) + "\n" +
+            "Effects: ";
+        foreach (StatusEffect effect in action.statusEffects) {
+            debugMessage += effect.name + ", ";
         }
-        Debug.Log(DebugMessage);
-        actionMessages.Add(new Message(Role.System, DebugMessage));
+        
+        Debug.Log(debugMessage);
+        actionMessages.Add(new Message(Role.Assistant, debugMessage));
 
         return action;
-    }
-
-    public void ResetAndSetSystemMessage(string message) {
-        messages.Clear();
-        messages.Add(new Message(Role.System, message));
-        actionMessages.Clear();
-        actionMessages.Add(new Message(Role.System, message));
     }
 }
 
@@ -182,15 +168,15 @@ public class ActionResponse {
     public string description { get; set; }
     [JsonProperty ("targetType")]
     public string targetType { get; set; }
-    [JsonProperty ("effects")]
-    public List<EffectResponse> effects { get; set; }
+    [JsonProperty ("damageType")]
+    public string damageType { get; set; }
+    [JsonProperty ("statusEffects")]
+    public List<StatusResponse> statusEffects { get; set; }
 }
 
-public class EffectResponse {
-    [JsonProperty ("effectType")]
-    public string effectType { get; set; }
-    [JsonProperty ("value")]
-    public int value { get; set; }
+public class StatusResponse {
+    [JsonProperty ("name")]
+    public string effectName { get; set; }
     [JsonProperty ("duration")]
     public int duration { get; set; }
 }
