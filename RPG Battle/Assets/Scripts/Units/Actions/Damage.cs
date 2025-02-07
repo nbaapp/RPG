@@ -43,6 +43,21 @@ public class Damage {
     public static DamageType StringToDamageType(string damageType) {
         return stringToDamageType[damageType];
     }
+    public override string ToString() {
+        string str = "";
+        switch (damageType) {
+            case DamageType.Damage:
+                str = "Damage: " + value;
+                break;
+            case DamageType.Heal:
+                str = "Heal: " + value;
+                break;
+            case DamageType.None:
+                str = "No Damage";
+                break;
+        }
+        return str;
+    }
 }
 
 public enum DamageType

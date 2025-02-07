@@ -74,4 +74,11 @@ public class UI : MonoBehaviour
         Action action = currentPlayer.ExecuteAction4();
         StartCoroutine(battleSystem.PlayerAction(action));
     }
+
+    public string GetActionDescription(Button actionButton)
+    {
+        string actionName = actionButton.GetComponentInChildren<TextMeshProUGUI>().text;
+        Action action = currentPlayer.GetAction(actionName);
+        return action.GetActionData();
+    }
 }

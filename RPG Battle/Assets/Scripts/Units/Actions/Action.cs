@@ -7,6 +7,7 @@ public class Action
 {
     public string name;
     public string description;
+    public string actionData;
     public TargetType targetType;
     public Damage damage;
     public List<StatusEffect> statusEffects;
@@ -56,6 +57,20 @@ public class Action
         this.targetType = targetType;
         this.damage = damage;
         this.statusEffects = statusEffects;
+    }
+
+    public void SetActionData()
+    {
+        actionData = name + "\n" + TargetTypeToString(targetType) + "\n" + damage.ToString() + "\n";
+        foreach (StatusEffect effect in statusEffects)
+        {
+            actionData += effect.name + ", ";
+        }
+    }
+    public string GetActionData()
+    {
+        SetActionData();
+        return actionData;
     }
 }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -71,7 +72,7 @@ public class Unit : MonoBehaviour
     //FIX AND MOVE (Probly)
     public Action SelectAction() {
         if (actions.Count > 0) {
-            return actions[Random.Range(0, actions.Count)];
+            return actions[UnityEngine.Random.Range(0, actions.Count)];
         }
         return null;
     }
@@ -109,7 +110,6 @@ public class Unit : MonoBehaviour
         if (statusEffects == null) {
             statusEffects = new List<StatusEffect>();
         }
-        //MAY NOT WORK
         if (statusEffects.Contains(statusEffect)) {
             StatusEffect status = statusEffects.Find(x => x.name == statusEffect.name);
             status.ResetDuration();
@@ -117,6 +117,7 @@ public class Unit : MonoBehaviour
         }
         statusEffect.ApplyEffect(this);
         statusEffects.Add(statusEffect);
+        battleHud.SetStatusText(StatusEffectsToString());
         Debug.Log(unitName + " has been affected by " + statusEffect.name);
     }
 
@@ -130,6 +131,7 @@ public class Unit : MonoBehaviour
         }
         statusEffects.Remove(statusEffect);
         statusEffect.RemoveEffect(this);
+        battleHud.SetStatusText(StatusEffectsToString());
         Debug.Log(unitName + " has been cured of " + statusEffect.name);
     }
 
@@ -138,7 +140,9 @@ public class Unit : MonoBehaviour
             Debug.Log("UnitAttributes is null");
             return;
         }
-        baseAttributes = attributes;
+        UnitAttributes newAttributes = new UnitAttributes(attributes);
+        baseAttributes = newAttributes;
+
         unitName = attributes.unitName;
         unitDescription = attributes.unitDescription;
         unitLevel = attributes.unitLevel;
@@ -230,6 +234,16 @@ public class Unit : MonoBehaviour
     }
     public List<StatusEffect> GetStatusEffects() {
         return statusEffects;
+    }
+    public string StatusEffectsToString() {
+        string statusEffectsString = "";
+        foreach (StatusEffect effect in statusEffects) {
+            statusEffectsString += effect.name + ", ";
+        }
+        return statusEffectsString;
+    }
+    public Action GetAction(string actionName) {
+        return actions.Find(x => x.name == actionName);
     }
 
 }

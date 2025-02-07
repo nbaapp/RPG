@@ -9,6 +9,7 @@ public class BattleHud : MonoBehaviour
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI levelText;
     public Slider hpSlider;
+    public TextMeshProUGUI statusText;
 
     public void SetHud(Unit unit)
     {
@@ -21,6 +22,11 @@ public class BattleHud : MonoBehaviour
     public void SetHP(int hp)
     {
         hpSlider.value = hp;
+    }
+
+    public void SetStatusText(string text)
+    {
+        statusText.text = text;
     }
 
 }
